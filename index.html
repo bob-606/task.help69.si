@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>JJ's Task List</title>
+<script>
+try { var t = localStorage.getItem('jj-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1b1f24; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb;
+    --chip:#f3f4f6; --hover:#f8fafc; --inputbg:#ffffff; --btnbg:#ffffff;
+    --don-high:#047857; --don-med:#4b5563; --don-low:#9ca3af;
+    --b0bg:#fee2e2; --b0fg:#991b1b; --b1bg:#fef3c7; --b1fg:#92400e;
+    --b2bg:#e5e7eb; --b2fg:#374151; --b3bg:#f3f4f6; --b3fg:#6b7280;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1216; --fg:#e7e9ec; --muted:#9aa3ad; --border:#242b33; --accent:#60a5fa;
+    --chip:#171c22; --hover:#151a20; --inputbg:#10151a; --btnbg:#171c22;
+    --don-high:#34d399; --don-med:#9ca3af; --don-low:#6b7280;
+    --b0bg:#3b1d1f; --b0fg:#fda4af; --b1bg:#3a2c10; --b1fg:#fcd34d;
+    --b2bg:#272e36; --b2fg:#cbd5e1; --b3bg:#1d232a; --b3fg:#94a3b8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{
+      --bg:#0f1216; --fg:#e7e9ec; --muted:#9aa3ad; --border:#242b33; --accent:#60a5fa;
+      --chip:#171c22; --hover:#151a20; --inputbg:#10151a; --btnbg:#171c22;
+      --don-high:#34d399; --don-med:#9ca3af; --don-low:#6b7280;
+      --b0bg:#3b1d1f; --b0fg:#fda4af; --b1bg:#3a2c10; --b1fg:#fcd34d;
+      --b2bg:#272e36; --b2fg:#cbd5e1; --b3bg:#1d232a; --b3fg:#94a3b8;
+    }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color:var(--fg); background:var(--bg); }
+  .wrap{ max-width:1100px; margin:0 auto; padding:28px 20px 60px; }
+  .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  header h1{ font-size:22px; margin:0; }
+
+  .legend{ display:flex; flex-direction:column; gap:6px; border:1px solid var(--border); border-radius:10px; padding:11px 14px; margin:18px 0 0; font-size:13px; color:var(--muted); }
+  .leg{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .leg .lbl{ font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); min-width:74px; }
+  .leg b{ color:var(--fg); font-weight:600; }
+
+  .controls{ display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; margin:20px 0 8px; }
+  .search{ flex:1 1 240px; min-width:200px; }
+  .search input{ width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--inputbg); color:var(--fg); }
+  .search input:focus{ outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent); }
+  .group{ display:flex; align-items:center; gap:6px; }
+  .group .lbl{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-right:2px; }
+  .btn, .chip{ border:1px solid var(--border); border-radius:999px; padding:4px 12px; font-size:13px; color:var(--fg); cursor:pointer; background:var(--btnbg); }
+  .chip{ background:var(--chip); }
+  .chip[aria-pressed="true"]{ background:var(--fg); border-color:var(--fg); color:var(--bg); }
+  .chip:hover, .btn:hover{ border-color:var(--muted); }
+  #theme{ white-space:nowrap; }
+
+  .count{ color:var(--muted); font-size:13px; margin:6px 2px 14px; }
+
+  .tablewrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th, td{ padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+  th{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; padding:6px 10px; }
+  th.sortable{ cursor:pointer; user-select:none; }
+  th.sortable:hover{ color:var(--fg); }
+  th .arrow{ font-size:10px; opacity:.35; margin-left:2px; }
+  th[data-active="true"]{ color:var(--fg); }
+  th[data-active="true"] .arrow{ opacity:1; }
+
+  tbody tr:hover{ background:var(--hover); }
+  td.task{ min-width:280px; }
+  .mono{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .don-high{ color:var(--don-high); font-weight:600; }
+  .don-med{ color:var(--don-med); }
+  .don-low{ color:var(--don-low); }
+  .badge{ display:inline-block; padding:1px 9px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .badge.p0{ background:var(--b0bg); color:var(--b0fg); }
+  .badge.p1{ background:var(--b1bg); color:var(--b1fg); }
+  .badge.p2{ background:var(--b2bg); color:var(--b2fg); }
+  .badge.p3{ background:var(--b3bg); color:var(--b3fg); }
+  td.empty{ text-align:center; color:var(--muted); padding:28px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <header>
+      <h1>JJ's Task List</h1>
+    </header>
+    <button class="btn" id="theme" type="button">◐ Auto</button>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><span class="lbl">Time</span><span><b>S</b> = under a day · <b>M</b> = 1–5 days · <b>L</b> = 1–3 weeks · <b>XL</b> = over a month</span></div>
+    <div class="leg"><span class="lbl">Donation impact</span><span><span class="don-high">High</span> = directly grows or protects income / donor experience · <span class="don-med">Med</span> = supports it indirectly · <span class="don-low">Low</span> = internal efficiency only</span></div>
+    <div class="leg"><span class="lbl">Priority</span><span><span class="badge p0">P0</span> (highest) → <span class="badge p3">P3</span> (lowest)</span></div>
+  </div>
+
+  <div class="controls">
+    <div class="search"><input id="q" type="search" placeholder="Search tasks or IDs…" autocomplete="off"></div>
+    <div class="group">
+      <span class="lbl">Priority</span>
+      <button class="chip" data-group="p" data-value="P0" aria-pressed="false">P0</button>
+      <button class="chip" data-group="p" data-value="P1" aria-pressed="false">P1</button>
+      <button class="chip" data-group="p" data-value="P2" aria-pressed="false">P2</button>
+      <button class="chip" data-group="p" data-value="P3" aria-pressed="false">P3</button>
+    </div>
+    <div class="group">
+      <span class="lbl">Donation impact</span>
+      <button class="chip" data-group="donation" data-value="High" aria-pressed="false">High</button>
+      <button class="chip" data-group="donation" data-value="Med" aria-pressed="false">Med</button>
+      <button class="chip" data-group="donation" data-value="Low" aria-pressed="false">Low</button>
+    </div>
+    <button class="btn" id="reset" type="button">Reset</button>
+  </div>
+
+  <div class="count" id="count"></div>
+
+  <div class="tablewrap">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="id">ID <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="task">Task <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="time">Time <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="donation">Donation impact <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="p">Priority <span class="arrow">↕</span></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* Embedded snapshot of docs/jj.md (16.OCT.2026) — used when jj.md is not reachable
+   (e.g. single-file deploy on another domain). If jj.md is present next to this page,
+   the live data replaces the snapshot automatically. */
+const EMBEDDED = [
+["JJ-01","Leleka (Slack AI agent): use-case catalogue + data-source inventory (what insights are asked for; what's missing)","S–M","Med","P0"],
+["JJ-02","Leleka (Slack AI agent): platform evaluation — Hermes Agent vs alternatives (Slack integration path; what the current Zapier bot cannot do)","M","Med","P0"],
+["JJ-03","Map the current payment + goods-receipt flow (TypeForm, donation platform, postal)","S–M","High","P0"],
+["JJ-04","TypeForm decision: integrate into the donor fulfillment flow, or eliminate","S","High","P0"],
+["JJ-05","Build shared reporting dashboard (one reporting period; currency rules; payment account vs payment method as separate fields; reconciliation; refresh times; missing-feed flags)","L","High","P0"],
+["JJ-06","Donation-account feeds into dashboard (campaign receipts, totals, one-time vs recurring)","M","High","P0"],
+["JJ-07","Bank + crypto records into reconciliation view","M","Med","P0"],
+["JJ-08","Web analytics + social feeds into dashboard","M","Med","P0"],
+["JJ-09","Subscription reconciliation across donation accounts (protects ~700 donors / ~€70k per month)","M","High","P0"],
+["JJ-10","Automated payment matching to donor, campaign, and donation account","L","High","P0"],
+["JJ-11","Automated benefit-request intake (reuse saved details, capture selections, generate fulfillment record)","L","High","P0"],
+["JJ-12","Eligibility rule engine (3-patch-per-shipment limit; extra unit patch for €750+ donations; vehicle messages from €1,500, max 4 per vehicle; recurring tiers)","M–L","High","P0"],
+["JJ-13","One-time → recurring conversion email flow","S–M","High","P0"],
+["JJ-14","Replace donation-proof screenshots with reliable payment matching","M–L","Med","P1"],
+["JJ-15","Reusable, editable donor shipping profile","L","Med","P1"],
+["JJ-16","Campaign completion → selection catalogue update","S–M","Med","P1"],
+["JJ-17","Recognition list sync (website + video channel) for active donors","M","Med","P1"],
+["JJ-18","Auto-link handover video → vehicle/message/donor","L","High","P1"],
+["JJ-19","Auto-route uploads to subtitle contributors; hold unlinked files for coordination","M","High","P1"],
+["JJ-20","Auto-send donor email after subtitles (duplicate prevention + retry path)","M","High","P1"],
+["JJ-21","Packing list + postal CSV generation (worldwide + US formats)","L","Med","P1"],
+["JJ-22","Stock-readiness gating; hold campaign batches until patches are available","M","Med","P1"],
+["JJ-23","Flag unit-patch bonus vs 3-patch limit overlaps for shipping review","S–M","Low","P1"],
+["JJ-24","Leleka (Slack AI agent): data access, permissions, sensitive-data review","M","Med","P0"],
+["JJ-25","Leleka (Slack AI agent): build the agent on the reconciled data layer (shares the dashboard's data, JJ-05)","L–XL","Med","P1"],
+["JJ-26","Leleka (Slack AI agent): review overlap with the existing Zapier bot (“Sniffer”); retire the bot only if Leleka covers its use cases (after JJ-01; run both in parallel before retiring)","S–M","Low","P1"],
+["JJ-27","BTCPay Server deployment — self-hosted crypto payments (hosting, wallets, security)","M","High","P3"],
+["JJ-28","BTCPay crypto invoices wired into donation flow + campaign pages","M","High","P3"],
+["JJ-29","WalletConnect integration — connect a wallet to donate via the crypto route","M","High","P3"],
+["JJ-30","Streamlined donation → benefits → payment → product flow (deps JJ-11/JJ-12/JJ-14)","L","High","P0"],
+["JJ-31","Vehicle-document extraction (VIN, year, make, model from document images)","L","Low","P0"],
+["JJ-32","Unit-document generation from templates at convoy assignment","L","Med","P0"],
+["JJ-33","Request-video intake directly into the CRM workflow","M","Med","P0"],
+["JJ-34","Automate the monthly rotation of the unit-application invite code","S–M","Low","P0"],
+["JJ-35","Deprovisioning audit trail + dormant-account alerts","M","Med","P0"],
+["JJ-36","Emergency lockout procedure (account compromise or hostile departure)","S–M","Med","P0"],
+["JJ-37","Set up secure database infrastructure for sensitive personal data (hosting, encryption, access control)","L","Med","P0"]
+];
+const COLS = ['id','task','time','donation','p'];
+const TIME_RANK = {'S':1,'S–M':1.5,'M':2,'M–L':2.5,'L':3,'L–XL':3.5,'XL':4};
+const DON_RANK = {High:1, Med:2, Low:3};
+const P_RANK = {P0:0, P1:1, P2:2, P3:3};
+
+let tasks = [];
+let sort = {key:null, dir:1};            // dir: 1 asc, -1 desc; key null = file order
+const filters = {text:'', p:new Set(), donation:new Set()};
+
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toObj = r => Object.fromEntries(r.map((v, i) => [COLS[i], v]));
+
+function parseTasks(text){
+  return text.split('\n')
+    .map(l => l.trim())
+    .filter(l => /^\|\s*JJ-\d+\s*\|/.test(l))
+    .map(l => {
+      const c = l.split('|').map(s => s.trim());
+      return {id:c[1], task:c[2], time:c[3], donation:c[4], p:c[5]};
+    });
+}
+
+function cmp(a, b){
+  const k = sort.key;
+  if (!k) return 0;
+  let va, vb, str = false;
+  if (k === 'id'){ va = +a.id.slice(3); vb = +b.id.slice(3); }
+  else if (k === 'time'){ va = TIME_RANK[a.time] ?? 99; vb = TIME_RANK[b.time] ?? 99; }
+  else if (k === 'donation'){ va = DON_RANK[a.donation] ?? 0; vb = DON_RANK[b.donation] ?? 0; }
+  else if (k === 'p'){ va = P_RANK[a.p] ?? 9; vb = P_RANK[b.p] ?? 9; }
+  else { str = true; va = a.task.toLowerCase(); vb = b.task.toLowerCase(); }
+  if (str) return sort.dir * va.localeCompare(vb);
+  return sort.dir * (va - vb);
+}
+
+function passes(t){
+  if (filters.p.size && !filters.p.has(t.p)) return false;
+  if (filters.donation.size && !filters.donation.has(t.donation)) return false;
+  if (filters.text){
+    const q = filters.text.toLowerCase();
+    if (!t.id.toLowerCase().includes(q) && !t.task.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+function rowHtml(t){
+  return '<tr>' +
+    '<td class="mono">' + esc(t.id) + '</td>' +
+    '<td class="task">' + esc(t.task) + '</td>' +
+    '<td>' + esc(t.time) + '</td>' +
+    '<td class="don-' + esc(t.donation.toLowerCase()) + '">' + esc(t.donation) + '</td>' +
+    '<td><span class="badge ' + esc(t.p.toLowerCase()) + '">' + esc(t.p) + '</span></td>' +
+    '</tr>';
+}
+
+function render(){
+  const rows = tasks.filter(passes).sort(cmp);
+  const tbody = $('#tbl tbody');
+  tbody.innerHTML = rows.length
+    ? rows.map(rowHtml).join('')
+    : '<tr><td class="empty" colspan="5">No tasks match the current filters.</td></tr>';
+  $('#count').textContent = rows.length + ' of ' + tasks.length + ' tasks shown' +
+    (rows.length !== tasks.length || filters.text ? '' : ' · click a column header to sort');
+  document.querySelectorAll('th.sortable').forEach(th => {
+    const active = th.dataset.key === sort.key;
+    th.dataset.active = active ? 'true' : 'false';
+    th.querySelector('.arrow').textContent = active ? (sort.dir === 1 ? '▲' : '▼') : '↕';
+  });
+}
+
+/* Theme toggle: auto (follow OS) → light → dark */
+const themeBtn = $('#theme');
+const THEME_LABEL = {auto:'◐ Auto', light:'☀ Light', dark:'☾ Dark'};
+function applyTheme(){
+  document.documentElement.dataset.theme = themeBtn.dataset.theme;
+  themeBtn.textContent = THEME_LABEL[themeBtn.dataset.theme];
+  try { localStorage.setItem('jj-theme', themeBtn.dataset.theme); } catch (e) {}
+}
+themeBtn.dataset.theme = document.documentElement.dataset.theme || 'auto';
+themeBtn.addEventListener('click', () => {
+  const order = ['auto','light','dark'];
+  themeBtn.dataset.theme = order[(order.indexOf(themeBtn.dataset.theme) + 1) % 3];
+  applyTheme();
+});
+applyTheme();
+
+document.querySelectorAll('.chip[data-group]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const g = btn.dataset.group, v = btn.dataset.value, set = filters[g];
+    if (set.has(v)) set.delete(v); else set.add(v);
+    btn.setAttribute('aria-pressed', set.has(v));
+    render();
+  });
+});
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (sort.key !== k){ sort.key = k; sort.dir = 1; }
+    else if (sort.dir === 1){ sort.dir = -1; }
+    else { sort.key = null; sort.dir = 1; }
+    render();
+  });
+});
+
+$('#q').addEventListener('input', e => { filters.text = e.target.value.trim(); render(); });
+
+$('#reset').addEventListener('click', () => {
+  filters.text = ''; filters.p.clear(); filters.donation.clear();
+  $('#q').value = '';
+  document.querySelectorAll('.chip[data-group]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  sort = {key:null, dir:1};
+  render();
+});
+
+(async function load(){
+  tasks = EMBEDDED.map(toObj);
+  render();
+  try {
+    const res = await fetch('jj.md', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const live = parseTasks(await res.text());
+    if (!live.length) throw new Error('no task rows found');
+    tasks = live;
+    render();
+  } catch (e) { /* keep the embedded snapshot */ }
+})();
+</script>
+</body>
+</html>
